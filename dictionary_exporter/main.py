@@ -1,7 +1,7 @@
 import sys
 import getopt
 import logging
-from controller import DataController
+from controller import FileReader
 from exception import *
 
 logging.basicConfig(filename='graphomania.log',
@@ -30,15 +30,18 @@ def main(argv):
         logger.warning('File path is empty')
         sys.exit()
 
-    data_controller: DataController = DataController()
+    file_reader: FileReader = FileReader()
 
     try:
-        data_controller.open_file(file_path)
+        file_reader.open_file(file_path)
     except DataException as e:
         logger.error(e)
         sys.exit(1)
 
-    del data_controller
+    for word in file_reader.get_words():
+        logger.info(word)
+
+    del file_reader
 
 
 if __name__ == "__main__":
