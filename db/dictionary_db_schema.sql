@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS dictionary.synonyms(
     meaning_group INT NOT NULL,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE (word_id, synonym_id, meaning_group),
-    FOREIGN KEY (word_id) REFERENCES dictionary.synonyms(id) ON DELETE CASCADE,
-    FOREIGN KEY (synonym_id) REFERENCES dictionary.synonyms(id) ON DELETE CASCADE
+    FOREIGN KEY (word_id) REFERENCES dictionary.words(id) ON DELETE CASCADE,
+    FOREIGN KEY (synonym_id) REFERENCES dictionary.words(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_synonyms_word_id ON dictionary.synonyms(word_id);
