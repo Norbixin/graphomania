@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS dictionary.words(
     id INT AUTO_INCREMENT PRIMARY KEY,
     word VARCHAR(64) NOT NULL,
     language VARCHAR(32) NOT NULL,
+    UNIQUE (word, language),
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS dictionary.word_types(
     synonym_id INT NOT NULL,
     type VARCHAR(32) NOT NULL,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE (synonym_id, type),
     FOREIGN KEY (synonym_id) REFERENCES dictionary.synonyms(id) ON DELETE CASCADE
 );
 
