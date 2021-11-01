@@ -1,14 +1,11 @@
-import _io
 import logging
-import re
-from abc import ABC
 
 from exception import DataException
 
 logger = logging.getLogger('FileReader')
 
 
-class FileReader(ABC):
+class DictReader:
 
     def __init__(self):
         self._file = None
@@ -17,16 +14,10 @@ class FileReader(ABC):
     def __del__(self):
         del self._file
 
-    def open_file(self, file_path: str, encoding: str = 'UTF-8'):
-        logger.debug(f'File encoding = "{encoding}"')
-        self._file = open(file_path, encoding=encoding)
-
-
-class DictReader(FileReader):
-
     def open_file(self, file_path: str):
         encoding = self.get_encoding(file_path).strip()
-        super().open_file(file_path, encoding)
+        logger.debug(f'File encoding = "{encoding}"')
+        self._file = open(file_path, encoding=encoding)
         self._file.readline()
 
     @staticmethod
@@ -37,11 +28,13 @@ class DictReader(FileReader):
         except Exception:
             raise DataException('Can\'t get encoding')
 
+    def get_word_with_meaning_groups(self) -> []:
+        with self._file as fp:
+            for line in fp:
+                yield line.strip().split('|')
 
-class DictIdxReader(DictReader):
-
-    def get_words(self):
-        words_number = int(self._file.readline().strip())
-        logger.debug(f'Number of words = "{words_number}"')
-        for line_num in range(words_number):
-            yield re.sub(r'\|.*', '', self._file.readline().strip())
+    def get_synonym_with_types(self) -> []:
+        for synonym in self._file.readline().strip().split('|')[1:]:
+            types = [cur_type.strip()[:-1] for cur_type in synonym.split('(')[1:]]
+            synonym = synonym.split('(')[0].strip()
+            yield synonym, types

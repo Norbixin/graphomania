@@ -12,55 +12,63 @@ logging.basicConfig(filename=config['logging']['file'],
 logger = logging.getLogger('Main')
 
 
-def insert_words(file_path: str, language: str):
-    logger.info('Started inserting words from idx file')
-    dict_idx_reader: DictIdxReader = DictIdxReader()
+def get_word_id(word: str, language: str, db_controller: DatabaseController) -> int:
+    try:
+        word_id = db_controller.get_word_id(word, language)
+    except DBException as dbe:
+        logger.debug(dbe)
+        word_id = db_controller.insert_word(word=word, language=language)
+    logger.debug(f'Word id = "{word_id}"')
+
+    return word_id
+
+
+def insert_synonym(word_id: int, synonym_word_id: int, meaning_group: int, db_controller: DatabaseController) -> int:
+    try:
+        synonym_id = db_controller.insert_synonym(word_id, synonym_word_id, meaning_group)
+    except DBException as dbe:
+        logger.debug(dbe)
+        synonym_id = db_controller.get_synonym_id(word_id, synonym_word_id, meaning_group)
+    logger.debug(f'Synonym id = "{synonym_id}"')
+
+    return synonym_id
+
+
+def insert_synonyms(file_path: str, language: str):
+    logger.info('Started inserting synonyms')
+    dict_reader: DictReader = DictReader()
 
     try:
-        dict_idx_reader.open_file(file_path)
+        dict_reader.open_file(file_path)
     except DataException as e:
         logger.error(e)
         sys.exit(1)
 
     db_controller = DatabaseController()
 
-    for word in dict_idx_reader.get_words():
-        db_controller.insert_word(word, language)
+    for word, meaning_groups in dict_reader.get_word_with_meaning_groups():
+        logger.debug(f'Word = "{word}", number of meaning groups = "{meaning_groups}"')
+        word_id = get_word_id(word, language, db_controller)
+        for meaning_group_idx in range(int(meaning_groups)):
+            for synonym, types in dict_reader.get_synonym_with_types():
+                logger.debug(f'Synonym = "{synonym}", types = "{types}"')
+                synonym_word_id = get_word_id(synonym, language, db_controller)
+                synonym_id = insert_synonym(word_id, synonym_word_id, meaning_group_idx, db_controller)
+                for word_type in types:
+                    try:
+                        db_controller.insert_type(synonym_id, word_type)
+                    except DBException as dbe:
+                        logger.debug(dbe)
 
-    del db_controller
-    del dict_idx_reader
-    logger.info('Finished inserting words from idx file')
+    logger.info('Finished inserting synonyms')
 
 
-def main(argv):
-    idx_file_path = ''
-    data_file_path = ''
-    language = ''
+def main():
+    file_path = config['dictionary']['file']
+    language = config['dictionary']['language']
 
-    try:
-        opts, args = getopt.getopt(argv, "hi:d:l:", ["index-file=", "data-file=", "language="])
-    except getopt.GetoptError:
-        logger.warning('main.py -i, --index-file= <index_file_path> '
-                       '-d, --data-file= <data_file_path> -l, --language= <language>')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            logger.warning('main.py -i, --index-file= <index_file_path> '
-                           '-d, --data-file= <data_file_path> -l, --language= <language>')
-            sys.exit()
-        elif opt in ("-i", "--index-file"):
-            idx_file_path = arg
-        elif opt in ("-d", "--data-file"):
-            data_file_path = arg
-        elif opt in ("-l", "--language"):
-            language = arg
-
-    if idx_file_path == '' or data_file_path == '' or language == '':
-        logger.warning('Index and data files and language must be provided')
-        sys.exit()
-
-    insert_words(idx_file_path, language)
+    insert_synonyms(file_path, language)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
